@@ -1,3 +1,5 @@
 venv/**
 dupes/**
 export/**
+/.idea/misc.xml
+/.idea/vcs.xml

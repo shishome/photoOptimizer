@@ -3,3 +3,4 @@ dupes/**
 export/**
 /.idea/misc.xml
 /.idea/vcs.xml
+*.sqlite3

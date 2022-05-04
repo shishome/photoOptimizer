@@ -1,7 +1,15 @@
 import photoscript, hashlib, os
 import dotenv
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import session
+from sqlalchemy_orm.session import Session
+
+from models.image import Image, Base
 
 dotenv.load_dotenv()
+engine = create_engine("sqlite:///db.sqlite3", echo=True, future=True)
+
+Image.metadata.create_all(engine)
 
 def main():
     try:
@@ -26,6 +34,8 @@ def main():
         print("Error. Set Environment Variable PHOTO_LIB_COUNT with total number of photos and videos combined in your library.")
     pgs = round(c / 10) + 1
     z = 1
+    #z = 155
+    itm = (z - 1) * 10
     print("SETUP: Number of pages: %s" % pgs)
     while pgs != z:
         print("PROGRESS: Fetching %s - %s to process... This may take a moment." % ( (z-1) * 10, z * 10) )
@@ -47,24 +57,45 @@ def main():
                 found = False
                 fndindx = 0
                 indx = 0
-                for y in md5list:
-                    if y[0] == md5.hexdigest():
-                        found = True
-                        fnd = y[1]
-                        fndindx = indx
-                    indx += 1
-                if found:
-                    print(" - SUBPROCESS: {0} / Found a duplicate.".format(str(ls)))
-                    if len(fnd.albums) >= len(x.albums) or fnd.favorite:
-                        foundalbum.add([x])
-                        x.export('dupes', False, True)
+
+                with Session(engine) as session:
+                    stmt = select(Image).where(Image.id == md5.hexdigest())
+                    for y in session.scalars(stmt):
+                        if y.id == md5.hexdigest():
+                            found = True
+                            fnd = int(y.name)
+                            fndid = y.id
+                        indx += 1
+                    if found:
+                        print(" - SUBPROCESS: {0} / Found a duplicate.".format(str(ls)))
+                        print("fnd", fnd)
+                        lkp = lib.photos(None,None,[fnd,fnd+1])
+                        lkpi = 0
+                        print(lkp)
+                        for fnddex in lkp:
+                            if(lkpi == 0):
+                                fnd1 = fnddex
+                                lkpi += 1
+                        if len(fnd1.albums) >= len(x.albums) or fnd1.favorite:
+                            foundalbum.add([x])
+                            x.export('dupes', False, True)
+                        else:
+                            print(" - SUBPROCESS: {0} / Previous instance of image has less album assignments -or- Current instance is a favorite. Marking previous instance as a duplicate.".format(str(ls)))
+                            foundalbum.add([fnd1])
+                            #md5list[fndindx][1] = x
+                            stmt = select(Image).where(Image.id == fndid)
+                            upd = session.scalars(stmt).one()
+                            upd.name = itm
+                            x.export('dupes', False, True)
                     else:
-                        print(" - SUBPROCESS: {0} / Previous instance of image has less album assignments -or- Current instance is a favorite. Marking previous instance as a duplicate.".format(str(ls)))
-                        foundalbum.add([fnd])
-                        md5list[fndindx][1] = x
-                        x.export('dupes', False, True)
-                else:
-                    md5list.append([md5.hexdigest(), x])
+                        new = Image(
+                            id=md5.hexdigest(),
+                            name=str(itm)
+                        )
+                        session.add_all([new])
+                        #md5list.append([md5.hexdigest(), x])
+                    session.commit()
+            itm += 1
         print("///////////////////////////////////////////")
         z = z + 1
 

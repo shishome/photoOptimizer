@@ -4,3 +4,4 @@ export/**
 /.idea/misc.xml
 /.idea/vcs.xml
 *.sqlite3
+*.pyc

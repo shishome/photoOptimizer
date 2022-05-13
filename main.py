@@ -33,13 +33,16 @@ def main():
     if c == 0:
         print("Error. Set Environment Variable PHOTO_LIB_COUNT with total number of photos and videos combined in your library.")
     pgs = round(c / 10) + 1
-    z = 1
-    #z = 155
+    #z = 1
+    z = 1921
     itm = (z - 1) * 10
     print("SETUP: Number of pages: %s" % pgs)
     while pgs != z:
-        print("PROGRESS: Fetching %s - %s to process... This may take a moment." % ( (z-1) * 10, z * 10) )
-        for x in lib.photos(None, None, [((z - 1) * 10),(z * 10)]):
+        end = z * 10
+        if(end > (c - 1)):
+            end = c - 1
+        print("PROGRESS: Fetching %s - %s to process... This may take a moment." % ( (z-1) * 10, end) )
+        for x in lib.photos(None, None, [((z - 1) * 10),(end)]):
             ls = x.export('export',True,True)
             md5 = hashlib.md5()
             if(len(ls) == 0):
